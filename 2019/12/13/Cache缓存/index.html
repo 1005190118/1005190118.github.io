@@ -1,0 +1,629 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN" class="loading">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cacha缓存 - moonlight blogs</title>
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="google" content="notranslate" />
+    <meta name="keywords" content="TriDiamond Obsidian,"> 
+    <meta name="description" content="
+这里是使用redis做Mybatis二级缓存
+
+第一步添加依赖          &amp;lt;!-- cache缓存 --&amp;gt;
+          &amp;lt;dependency&amp;gt;
+     ,"> 
+    <meta name="author" content="moonlight"> 
+    <link rel="alternative" href="atom.xml" title="moonlight blogs" type="application/atom+xml"> 
+    <link rel="icon" href="/img/favicon.png"> 
+    <link href="https://fonts.loli.net/css?family=Roboto+Mono|Rubik&display=swap" rel="stylesheet">
+    
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1429596_nzgqgvnmkjb.css">
+
+    
+<link rel="stylesheet" href="//cdn.bootcss.com/animate.css/3.7.2/animate.min.css">
+
+    
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/css/share.min.css">
+
+    
+<link rel="stylesheet" href="//cdn.bootcss.com/codemirror/5.48.4/codemirror.min.css">
+
+    
+<link rel="stylesheet" href="//cdn.bootcss.com/codemirror/5.48.4/theme/dracula.css">
+
+    
+<link rel="stylesheet" href="/css/obsidian.css">
+
+    
+<link rel="stylesheet" href="/css/ball-atom.min.css">
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body class="loading">
+    <div class="loader">
+        <div class="la-ball-atom la-2x">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+    </div>
+    <span id="config-title" style="display:none">moonlight blogs</span>
+    <div id="loader"></div>
+    <div id="single">
+    <div class="scrollbar gradient-bg-rev"></div>
+<div id="top" style="display: block;">
+    <div class="bar" style="width: 0;"></div>
+    <div class="navigation animated fadeIn fast delay-1s">
+        <img id="home-icon" class="icon-home" src="/img/favicon.png" alt="" data-url="http://1005190118.github.io">
+        <div id="play-icon" title="Play/Pause" class="iconfont icon-play"></div>
+        <h3 class="subtitle">Cacha缓存</h3>
+        <div class="social">
+            <!--        <div class="like-icon">-->
+            <!--            <a href="javascript:;" class="likeThis active"><span class="icon-like"></span><span class="count">76</span></a>-->
+            <!--        </div>-->
+            <div>
+                <div class="share">
+                    
+                        <a href="javascript:;" class="iconfont icon-share1"></a>
+                        <div class="share-component-cc" data-disabled="facebook,douban,linkedin,diandian,tencent,google"></div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div class="section">
+        <div class=article-header-wrapper>
+    <div class="article-header">
+        <div class="article-cover animated fadeIn" style="
+            animation-delay: 600ms;
+            animation-duration: 1.2s;
+            background-image: 
+                radial-gradient(ellipse closest-side, rgba(0, 0, 0, 0.65), #100e17),
+                url(/img/cover.jpg);">
+        </div>
+        <div class="else">
+            <p class="animated fadeInDown">
+                
+                <a href="javascript:;"><b>「 </b>文章<b> 」</b></a>
+                
+                十二月 13, 2019
+            </p>
+            <h3 class="post-title animated fadeInDown"><a href="/2019/12/13/Cache%E7%BC%93%E5%AD%98/" title="Cacha缓存" class="">Cacha缓存</a>
+            </h3>
+            
+            <p class="post-count animated fadeInDown">
+                
+                <span>
+                    <b class="iconfont icon-text2"></b> <i>文章字数</i>
+                    6k
+                </span>
+                
+                
+                <span>
+                    <b class="iconfont icon-timer__s"></b> <i>阅读约需</i>
+                    5 mins.
+                </span>
+                
+                
+                
+                <span id="busuanzi_container_page_pv">
+                    <b class="iconfont icon-read"></b> <i>阅读次数</i>
+                    <span id="busuanzi_value_page_pv">0</span>
+                </span>
+                
+            </p>
+            
+            
+        </div>
+    </div>
+</div>
+
+<div class="screen-gradient-after">
+    <div class="screen-gradient-content">
+        <div class="screen-gradient-content-inside">
+            <div class="bold-underline-links screen-gradient-sponsor">
+                <p>
+                    <span class="animated fadeIn delay-1s"></span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="article">
+    <div class='main'>
+        <div class="content markdown animated fadeIn">
+            <blockquote>
+<p>这里是使用redis做Mybatis二级缓存</p>
+</blockquote>
+<h1 id="第一步添加依赖"><a href="#第一步添加依赖" class="headerlink" title="第一步添加依赖"></a>第一步添加依赖</h1><pre><code class="xml">          &lt;!-- cache缓存 --&gt;
+          &lt;dependency&gt;
+              &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+              &lt;artifactId&gt;spring-boot-starter-cache&lt;/artifactId&gt;
+          &lt;/dependency&gt;
+          &lt;!--添加Redis依赖 --&gt;
+          &lt;dependency&gt;
+              &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+              &lt;artifactId&gt;spring-boot-starter-data-redis&lt;/artifactId&gt;
+          &lt;/dependency&gt;</code></pre>
+<h1 id="第二步启动类上添加注解"><a href="#第二步启动类上添加注解" class="headerlink" title="第二步启动类上添加注解"></a>第二步启动类上添加注解</h1><pre><code class="java">  @EnableCaching</code></pre>
+<h1 id="第三步编写RedisConfig"><a href="#第三步编写RedisConfig" class="headerlink" title="第三步编写RedisConfig"></a>第三步编写RedisConfig</h1><pre><code class="java">  @Configuration
+  public class RedisConfig {
+
+      @Bean
+      public RedisTemplate&lt;String,String&gt; redisTemplate(RedisConnectionFactory factory){
+          RedisTemplate&lt;String,String&gt; redisTemplate  = new RedisTemplate&lt;&gt;();
+
+          redisTemplate.setConnectionFactory(factory);
+          return redisTemplate;
+      }
+
+      /**
+       * 生成自定义的key
+       * @return
+       */
+      @Bean(&quot;myKeyGenerator&quot;)
+      public KeyGenerator MyKeyGenerator() {
+          return (o, method, objects) -&gt; {
+              StringBuilder stringBuilder = new StringBuilder();
+              stringBuilder.append(o.getClass().getSimpleName());
+              stringBuilder.append(&quot;.&quot;);
+              stringBuilder.append(method.getName());
+              stringBuilder.append(&quot;[&quot;);
+              for (Object obj : objects) {
+                  stringBuilder.append(obj.toString());
+              }
+              stringBuilder.append(&quot;]&quot;);
+              return stringBuilder.toString();
+          };
+      }
+
+      @Bean
+      public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
+          return new RedisCacheManager(
+                  RedisCacheWriter.nonLockingRedisCacheWriter(redisConnectionFactory),
+                  /**
+                   * 默认策略，未配置的 key 会使用这个
+                   */
+                  this.getRedisCacheConfigurationWithTtl(6000),
+                  /**
+                   * // 指定 key 策略
+                   */
+                  this.getRedisCacheConfigurationMap()
+          );
+      }
+
+      private Map&lt;String, RedisCacheConfiguration&gt; getRedisCacheConfigurationMap() {
+          Map&lt;String, RedisCacheConfiguration&gt; redisCacheConfigurationMap = new HashMap&lt;&gt;();
+          redisCacheConfigurationMap.put(&quot;shmUserInfo&quot;, this.getRedisCacheConfigurationWithTtl(3000));
+          redisCacheConfigurationMap.put(&quot;UserInfoListAnother&quot;, this.getRedisCacheConfigurationWithTtl(18000));
+          return redisCacheConfigurationMap;
+      }
+
+      private RedisCacheConfiguration getRedisCacheConfigurationWithTtl(Integer seconds) {
+          Jackson2JsonRedisSerializer&lt;Object&gt; jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer&lt;&gt;(Object.class);
+          ObjectMapper om = new ObjectMapper();
+          om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+          om.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);
+          jackson2JsonRedisSerializer.setObjectMapper(om);
+
+          RedisCacheConfiguration redisCacheConfiguration = RedisCacheConfiguration.defaultCacheConfig();
+          redisCacheConfiguration = redisCacheConfiguration.serializeValuesWith(
+                  RedisSerializationContext
+                          .SerializationPair
+                          .fromSerializer(jackson2JsonRedisSerializer)
+          ).entryTtl(Duration.ofSeconds(seconds));
+
+          return redisCacheConfiguration;
+      }
+
+  }
+</code></pre>
+<h1 id="第四步在service上使用"><a href="#第四步在service上使用" class="headerlink" title="第四步在service上使用"></a>第四步在service上使用</h1><blockquote>
+<p><strong>直接在service类上注解</strong>@CacheConfig<strong>指定cacheNames（缓存名称），keyGenerator（key的生成器），cacheManager（那个缓存器），就不用在下面的3中注解上指定了。</strong></p>
+<blockquote>
+<p><strong>3种注解：</strong></p>
+<p><strong>1）：</strong>@Cacheable <strong>用于查找</strong></p>
+<p><strong>2）：</strong>@CachePut <strong>用于增加，更改</strong></p>
+<p><strong>3）：</strong>@CacheEvict <strong>用于删除</strong></p>
+</blockquote>
+</blockquote>
+<p>  示例：</p>
+<pre><code class="java">  @Service
+  @CacheConfig(cacheNames = &quot;shmUserInfo&quot;)
+  public class UserServiceImpl implements UserService {
+
+      @Resource
+      private UserMapper userMapper;
+
+      /**
+       * 保存用户信息
+       * @param user
+       * @return
+       */
+      @Override
+      @CachePut(key = &quot;&#39;UserServiceImpl.findByPhone[&#39;+#result.phone+&#39;]&#39;&quot;)
+      public  int saveUser(User user) {
+          return userMapper.saveUser(user);
+      }
+
+      /**
+       * 通过手机号查找用户
+       * @param phone
+       * @return
+       */
+      @Override
+      @Cacheable(keyGenerator = &quot;myKeyGenerator&quot;)
+      public User findByPhone(String phone) {
+          return userMapper.findByPhone(phone);
+      }
+
+      @Override
+      @Cacheable(keyGenerator = &quot;myKeyGenerator&quot;)
+      public User findById(Integer id) {
+          return userMapper.findById(id);
+      }
+
+      /**
+       * 更改用户信息
+       * @param user
+       * @return
+       */
+      @Override
+      @CachePut(key = &quot;&#39;UserServiceImpl.findByPhone[&#39;+#result.phone+&#39;]&#39;&quot;)
+      public User updateUser(User user) {
+          userMapper.updateUser(user);
+          return  user;
+      }
+
+      @Override
+      @Cacheable(keyGenerator = &quot;myKeyGenerator&quot;)
+      public List&lt;User&gt; listUser(){
+          return userMapper.listUser();
+      }
+  }
+  注解详情看B站springboot高级教程，前几章讲的是cache缓存，讲上面3个注解
+</code></pre>
+
+            <!--[if lt IE 9]><script>document.createElement('audio');</script><![endif]-->
+            <audio id="audio" loop="1" preload="auto" controls="controls"
+                data-autoplay="false">
+                <source type="audio/mpeg" src="">
+            </audio>
+            
+            <ul id="audio-list" style="display:none">
+                
+                
+                <li title='0' data-url='/statics/chengdu.mp3'></li>
+                
+                    
+            </ul>
+            
+            
+            
+    <!-- <div id='gitalk-container' class="comment link"
+        data-ae='true'
+        data-ci='41a81446f63af699fa84'
+        data-cs='5bec1ff9a62b16b19355a73b9c46809d697ad197'
+        data-r='myblog'
+        data-o='1005190118'
+        data-a='1005190118'
+        data-d='false'
+    >留言</div> -->
+    <link href="https://cdn.bootcss.com/gitalk/1.5.0/gitalk.css" rel="stylesheet">
+    <div id="gitalk-container"></div><div>留言</div>
+    <script src="https://cdn.bootcss.com/blueimp-md5/2.12.0/js/md5.js"></script>
+    <script src="https://cdn.bootcss.com/gitalk/1.5.0/gitalk.min.js"></script>
+    <script>
+        const gitalk = new Gitalk({
+        clientID: 'f43dc7940269af59f22b',
+        clientSecret: 'b037026b654c8f6e43d1bdc465ca2cc45f0a792c',
+        repo: 'moonlight blogs',
+        owner: '1005190118',
+        admin: ['1005190118'],
+        id: md5(window.location.pathname),      // Ensure uniqueness and length less than 50
+        distractionFreeMode: false  // Facebook-like distraction free mode
+    })
+    gitalk.render('gitalk-container')
+    </script>
+
+
+
+            
+            
+        </div>
+        <div class="sidebar">
+            <div class="box animated fadeInRight">
+                <div class="subbox">
+                    <img src="/img/14.png" height=300 width=300></img>
+                    <p>moonlight</p>
+                    <span>Think like an artist, develop like an artisan</span>
+                    <dl>
+                        <dd><a href="https://github.com/1005190118" target="_blank"><span
+                                    class=" iconfont icon-github"></span></a></dd>
+                        <dd><a href="https://github.com/1005190118" target="_blank"><span
+                                    class=" iconfont icon-twitter"></span></a></dd>
+                        <dd><a href="https://github.com/1005190118" target="_blank"><span
+                                    class=" iconfont icon-stack-overflow"></span></a></dd>
+                    </dl>
+                </div>
+                <ul>
+                    <li><a href="/">2 <p>文章</p></a></li>
+                    <li><a href="/categories">0 <p>分类</p></a></li>
+                    <li><a href="/tags">0 <p>标签</p></a></li>
+                </ul>
+            </div>
+            
+            
+            
+            <div class="box sticky animated fadeInRight faster">
+                <div id="toc" class="subbox">
+                    <h4>目录</h4>
+                    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#第一步添加依赖"><span class="toc-number">1.</span> <span class="toc-text">第一步添加依赖</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#第二步启动类上添加注解"><span class="toc-number">2.</span> <span class="toc-text">第二步启动类上添加注解</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#第三步编写RedisConfig"><span class="toc-number">3.</span> <span class="toc-text">第三步编写RedisConfig</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#第四步在service上使用"><span class="toc-number">4.</span> <span class="toc-text">第四步在service上使用</span></a></li></ol>
+                </div>
+            </div>
+            
+            
+        </div>
+    </div>
+</div>
+
+    </div>
+</div>
+    <div id="back-to-top" class="animated fadeIn faster">
+        <div class="flow"></div>
+        <span class="percentage animated fadeIn faster">0%</span>
+        <span class="iconfont icon-top02 animated fadeIn faster"></span>
+    </div>
+</body>
+<footer>
+    <p class="copyright" id="copyright">
+        &copy; 2019
+        <span class="gradient-text">
+            moonlight
+        </span>.
+        Powered by <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a>
+        Theme
+        <span class="gradient-text">
+            <a href="https://github.com/TriDiamond/hexo-theme-obsidian" title="Obsidian" target="_blank" rel="noopener">Obsidian</a>
+        </span>
+        <small><a href="https://github.com/TriDiamond/hexo-theme-obsidian/blob/master/CHANGELOG.md" title="v1.4.3" target="_blank" rel="noopener">v1.4.3</a></small>
+    </p>
+</footer>
+
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.6/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+<script>
+  MathJax.Hub.Config({
+    "HTML-CSS": {
+      preferredFont: "TeX",
+      availableFonts: ["STIX", "TeX"],
+      linebreaks: {
+        automatic: true
+      },
+      EqnChunk: (MathJax.Hub.Browser.isMobile ? 10 : 50)
+    },
+    tex2jax: {
+      inlineMath: [
+        ["$", "$"],
+        ["\\(", "\\)"]
+      ],
+      processEscapes: true,
+      ignoreClass: "tex2jax_ignore|dno",
+      skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    },
+    TeX: {
+      noUndefined: {
+        attributes: {
+          mathcolor: "red",
+          mathbackground: "#FFEEEE",
+          mathsize: "90%"
+        }
+      },
+      Macros: {
+        href: "{}"
+      }
+    },
+    messageStyle: "none"
+  });
+</script>
+<script>
+  function initialMathJax() {
+    MathJax.Hub.Queue(function () {
+      var all = MathJax.Hub.getAllJax(),
+        i;
+      // console.log(all);
+      for (i = 0; i < all.length; i += 1) {
+        console.log(all[i].SourceElement().parentNode)
+        all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+    });
+  }
+
+  function reprocessMathJax() {
+    if (typeof MathJax !== 'undefined') {
+      MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+    }
+  }
+</script>
+
+
+
+    
+<link rel="stylesheet" href="//cdn.bootcss.com/gitalk/1.5.0/gitalk.min.css">
+
+    
+<script src="//cdn.bootcss.com/gitalk/1.5.0/gitalk.min.js"></script>
+
+
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="/js/plugin.js"></script>
+<script src="/js/obsidian.js"></script>
+<script src="/js/jquery.truncate.js"></script>
+<script src="/js/search.js"></script>
+
+
+<script src="//cdn.bootcss.com/typed.js/2.0.10/typed.min.js"></script>
+
+
+<script src="//cdn.bootcss.com/blueimp-md5/2.12.0/js/md5.min.js"></script>
+
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script>
+
+
+<script src="https://cdn.bootcss.com/codemirror/5.48.4/codemirror.min.js"></script>
+
+    
+<script src="//cdn.bootcss.com/codemirror/5.48.4/mode/javascript/javascript.min.js"></script>
+
+
+    
+<script src="//cdn.bootcss.com/codemirror/5.48.4/mode/css/css.min.js"></script>
+
+
+    
+<script src="//cdn.bootcss.com/codemirror/5.48.4/mode/xml/xml.min.js"></script>
+
+
+    
+<script src="//cdn.bootcss.com/codemirror/5.48.4/mode/htmlmixed/htmlmixed.min.js"></script>
+
+
+    
+<script src="//cdn.bootcss.com/codemirror/5.48.4/mode/clike/clike.min.js"></script>
+
+
+    
+<script src="//cdn.bootcss.com/codemirror/5.48.4/mode/php/php.min.js"></script>
+
+
+    
+<script src="//cdn.bootcss.com/codemirror/5.48.4/mode/shell/shell.min.js"></script>
+
+
+    
+<script src="//cdn.bootcss.com/codemirror/5.48.4/mode/python/python.min.js"></script>
+
+
+
+
+    
+<script src="/js/busuanzi.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            if ($('span[id^="busuanzi_"]').length) {
+                initialBusuanzi();
+            }
+        });
+    </script>
+
+
+
+<link rel="stylesheet" href="//cdn.bootcss.com/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="//cdn.bootcss.com/photoswipe/4.1.3/default-skin/default-skin.min.css">
+
+
+<script src="//cdn.bootcss.com/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="//cdn.bootcss.com/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+            <div class="pswp__top-bar">
+                <!--  Controls are self-explanatory. Order can be changed. -->
+                <div class="pswp__counter"></div>
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="//www.googletagmanager.com/gtag/js?id=UA-149874671-1"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'UA-149874671-1');
+    </script>
+
+
+
+
+
+<script>
+    function initialTyped () {
+        var typedTextEl = $('.typed-text');
+        if (typedTextEl && typedTextEl.length > 0) {
+            var typed = new Typed('.typed-text', {
+                strings: ["Think like an artist, develop like an artisan", "艺术家思维去思考问题，工匠创造精神去开发"],
+                typeSpeed: 90,
+                loop: true,
+                loopCount: Infinity,
+                backSpeed: 20,
+            });
+        }
+    }
+
+    if ($('.article-header') && $('.article-header').length) {
+        $(document).ready(function () {
+            initialTyped();
+        });
+    }
+</script>
+
+
+
+
+</html>
