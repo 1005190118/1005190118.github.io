@@ -1167,18 +1167,23 @@ $(function () {
         return false;
         // comment
       case -1 != tag.indexOf("comment"):
+        console.log(comment)
         Obsidian.loading(),
           comment = $('#gitalk-container');
+          console.log(comment)
         var gitalk = new Gitalk({
           clientID: comment.data('ci'),
+          
           clientSecret: comment.data('cs'),
           repo: comment.data('r'),
           owner: comment.data('o'),
           admin: [comment.data('a')],
           id: md5(window.location.pathname),
           distractionFreeMode: comment.data('d'),
-          labels: ['Gitalk']
+          // labels: ['Gitalk']
         });
+        console.log(comment)
+        
         $(".comment").removeClass("link");
         gitalk.render('gitalk-container');
         Obsidian.loaded();
@@ -1259,5 +1264,5 @@ $(function () {
   utiliseBgColor();
   initialTyped();
   Obsidian.setCodeRowWithLang();
-  console.log("%c Github %c", "background:#24272A; color:#73ddd7", "", "https://github.com/TriDiamond/hexo-theme-obsidian");
+  //console.log("%c Github %c", "background:#24272A; color:#73ddd7", "", "https://github.com/TriDiamond/hexo-theme-obsidian");
 });
